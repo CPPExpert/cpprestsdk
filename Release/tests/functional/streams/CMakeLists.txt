@@ -4,6 +4,7 @@ set(SOURCES
   memstream_tests.cpp
   ostream_tests.cpp
   stdstream_tests.cpp
+  stdafx.cpp
 )
 if (NOT WINDOWS_STORE AND NOT WINDOWS_PHONE)
   list(APPEND SOURCES fuzz_tests.cpp)
