@@ -107,8 +107,8 @@ private:
             // NOTE: Uses internals of the bionic library
             // Written against android ndk r9d, 7/26/2014
             __pthread_cleanup_pop(&__cleanup, true);
-            throw;
 #endif
+            throw;
         }
 #if (defined(ANDROID) || defined(__ANDROID__))
         pthread_cleanup_pop(true);

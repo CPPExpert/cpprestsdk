@@ -266,7 +266,7 @@ void connection::handle_http_line(const boost::system::error_code& ec)
         {
             std::string tmp;
             request_stream >> tmp;
-            http_verb = utility::conversions::to_string_t(tmp);
+            http_verb = utility::conversions::latin1_to_utf16(tmp);
         }
 #endif
 

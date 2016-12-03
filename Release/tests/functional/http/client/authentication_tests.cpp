@@ -67,7 +67,7 @@ TEST_FIXTURE(uri_address, auth_no_data, "Ignore:Linux", "89", "Ignore:Apple", "8
             p_request->reply(200);
         };
 
-    scoped.server()->next_request().then([&](test_request *p_request)
+    auto t = scoped.server()->next_request().then([&](test_request *p_request)
     {
         http_asserts::assert_test_request_equals(p_request, mtd, U("/"));
 
