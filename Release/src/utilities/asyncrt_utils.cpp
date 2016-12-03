@@ -438,23 +438,19 @@ utf8string __cdecl conversions::latin1_to_utf8(const std::string &s)
     return utf16_to_utf8(latin1_to_utf16(s));
 }
 
+#ifndef _UTF16_STRINGS
 utility::string_t __cdecl conversions::to_string_t(utf16string &&s)
 {
-#ifdef _UTF16_STRINGS
-    return std::move(s);
-#else
     return utf16_to_utf8(std::move(s));
-#endif
 }
+#endif
 
+#ifdef _UTF16_STRINGS
 utility::string_t __cdecl conversions::to_string_t(std::string &&s)
 {
-#ifdef _UTF16_STRINGS
     return utf8_to_utf16(std::move(s));
-#else
-    return std::move(s);
-#endif
 }
+#endif
 
 #ifndef _UTF16_STRINGS
 utility::string_t __cdecl conversions::to_string_t(const utf16string &s)

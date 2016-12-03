@@ -100,7 +100,7 @@ elseif(ANDROID)
     )
 elseif(UNIX) # This includes OSX
 elseif(WIN32)
-  add_definitions(-DUNICODE -D_UNICODE)
+  add_definitions(-DUNICODE -D_UNICODE -D_WIN32_WINNT=0x0600)
 
   if(NOT BUILD_SHARED_LIBS)
     # This causes cmake to not link the test libraries separately, but instead hold onto their object files.

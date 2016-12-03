@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include <utility>
 #include "cpprest/http_listener.h"
 
 namespace tests { namespace functional { namespace http { namespace listener {

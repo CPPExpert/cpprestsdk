@@ -1,3 +1,5 @@
+cmake_policy(SET CMP0022 NEW)
+
 # Note: we are only listing a source file to suppress a CMake warning.
 # The bulk of the sources will be incrementally added via `target_sources`.
 add_library(cpprest http/client/http_client.cpp)
@@ -65,6 +67,18 @@ target_sources(cpprest PRIVATE
   utilities/web_utilities.cpp
 )
 
+set(CPPREST_USES_BOOST OFF)
+set(CPPREST_USES_OPENSSL OFF)
+set(CPPREST_USES_ZLIB OFF)
+set(CPPREST_USES_WEBSOCKETPP OFF)
+
+if (WIN32 AND NOT WINDOWS_STORE AND NOT WINDOWS_PHONE)
+  target_link_libraries(cpprest PRIVATE
+    bcrypt.lib
+    crypt32.lib
+  )
+endif()
+
 # Websockets component
 if(CPPREST_WEBSOCKETS_IMPL STREQUAL "none")
   target_compile_definitions(cpprest PUBLIC -DCPPREST_EXCLUDE_WEBSOCKETS=1)
@@ -75,13 +89,10 @@ elseif(CPPREST_WEBSOCKETS_IMPL STREQUAL "winrt")
     websockets/client/ws_client_winrt.cpp
   )
 elseif(CPPREST_WEBSOCKETS_IMPL STREQUAL "wspp")
-  cpprest_find_zlib()
-  cpprest_find_openssl()
-  cpprest_find_boost()
-  cpprest_find_websocketpp()
-
-  target_include_directories(cpprest SYSTEM PRIVATE ${Boost_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR} ${WEBSOCKETPP_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR})
-  target_link_libraries(cpprest PRIVATE ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES})
+  set(CPPREST_USES_WEBSOCKETPP ON)
+  set(CPPREST_USES_BOOST ON)
+  set(CPPREST_USES_OPENSSL ON)
+  set(CPPREST_USES_ZLIB ON)
 
   target_sources(cpprest PRIVATE
     websockets/client/ws_msg.cpp
@@ -96,9 +107,7 @@ endif()
 if(CPPREST_EXCLUDE_COMPRESSION)
   target_compile_definitions(cpprest PUBLIC -DCPPREST_EXCLUDE_COMPRESSION=1)
 else()
-  cpprest_find_zlib()
-  target_include_directories(cpprest SYSTEM PRIVATE ${ZLIB_INCLUDE_DIRS})
-  target_link_libraries(cpprest PRIVATE ${ZLIB_LIBRARIES})
+  set(CPPREST_USES_ZLIB ON)
 endif()
 
 # PPLX component
@@ -130,17 +139,14 @@ endif()
 
 # Http client component
 if(CPPREST_HTTP_CLIENT_IMPL STREQUAL "asio")
-  cpprest_find_boost()
-  target_include_directories(cpprest SYSTEM PRIVATE ${Boost_INCLUDE_DIR})
-  target_link_libraries(cpprest PRIVATE ${Boost_LIBRARIES})
+  set(CPPREST_USES_BOOST ON)
+  set(CPPREST_USES_OPENSSL ON)
   target_compile_definitions(cpprest PUBLIC -DCPPREST_FORCE_HTTP_CLIENT_ASIO)
 
   target_sources(cpprest PRIVATE http/client/http_client_asio.cpp)
 elseif(CPPREST_HTTP_CLIENT_IMPL STREQUAL "winhttp")
   target_sources(cpprest PRIVATE http/client/http_client_winhttp.cpp)
   target_link_libraries(cpprest PRIVATE
-    bcrypt.lib
-    crypt32.lib
     httpapi.lib
     Winhttp.lib
   )
@@ -163,6 +169,8 @@ endif()
 
 # http listener component
 if(CPPREST_HTTP_LISTENER_IMPL STREQUAL "asio")
+  set(CPPREST_USES_BOOST ON)
+  set(CPPREST_USES_OPENSSL ON)
   target_sources(cpprest PRIVATE http/listener/http_server_asio.cpp)
   target_compile_definitions(cpprest PUBLIC -DCPPREST_FORCE_HTTP_LISTENER_ASIO)
 elseif(CPPREST_HTTP_LISTENER_IMPL STREQUAL "httpsys")
@@ -188,6 +196,26 @@ if(MSVC)
   target_sources(cpprest PRIVATE pch/stdafx.cpp pch/stdafx.h)
 endif()
 
+# Add any libraries that were used.
+if(CPPREST_USES_WEBSOCKETPP)
+  cpprest_find_websocketpp()
+  target_include_directories(cpprest SYSTEM PRIVATE ${WEBSOCKETPP_INCLUDE_DIR})
+endif()
+if(CPPREST_USES_BOOST)
+  cpprest_find_boost()
+  target_link_libraries(cpprest PUBLIC ${Boost_LIBRARIES}) 
+  target_include_directories(cpprest SYSTEM PUBLIC ${Boost_INCLUDE_DIR})
+endif()
+if(CPPREST_USES_OPENSSL)
+  cpprest_find_openssl()
+  target_link_libraries(cpprest PUBLIC ${OPENSSL_LIBRARIES})
+  target_include_directories(cpprest SYSTEM PUBLIC ${OPENSSL_INCLUDE_DIR})
+endif()
+if(CPPREST_USES_ZLIB)
+  cpprest_find_zlib()
+  target_link_libraries(cpprest PUBLIC ${ZLIB_LIBRARIES})
+  target_include_directories(cpprest SYSTEM PUBLIC ${ZLIB_INCLUDE_DIR})
+endif()
 if(ANDROID)
   target_link_libraries(cpprest PRIVATE ${ANDROID_STL_FLAGS})
 endif()
