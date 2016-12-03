@@ -11,12 +11,12 @@ target_include_directories(cpprest
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
   if(WERROR)
-    target_compile_definitions(cpprest PRIVATE -Werror)
+    target_compile_options(cpprest PRIVATE -Werror)
   endif()
-  target_compile_definitions(cpprest PRIVATE -pedantic)
+  target_compile_options(cpprest PRIVATE -pedantic)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   if(WERROR)
-    target_compile_definitions(cpprest PRIVATE /WX)
+    target_compile_options(cpprest PRIVATE /WX)
   endif()
 endif()
 
@@ -24,7 +24,7 @@ if (BUILD_SHARED_LIBS AND WIN32)
   target_compile_definitions(cpprest PRIVATE -D_ASYNCRT_EXPORT -D_PPLX_EXPORT -D_USRDLL)
 endif()
 
-target_compile_definitions(cpprest PRIVATE ${WARNINGS})
+target_compile_options(cpprest PRIVATE ${WARNINGS})
 
 file(GLOB HEADERS_CPPREST "../include/cpprest/*.h" "../include/cpprest/*.hpp" "../include/cpprest/*.dat")
 file(GLOB HEADERS_PPLX "../include/pplx/*.h" "../include/pplx/*.hpp")
@@ -120,7 +120,10 @@ elseif(CPPREST_PPLX_IMPL STREQUAL "linux")
     pplx/pplxlinux.cpp
   )
 elseif(CPPREST_PPLX_IMPL STREQUAL "win")
-  target_sources(cpprest PRIVATE pplx/pplxwin.cpp)
+  target_sources(cpprest PRIVATE
+    pplx/threadpool.cpp
+    pplx/pplxwin.cpp
+  )
 else()
   message(FATAL_ERROR "Invalid implementation")
 endif()
@@ -130,6 +133,7 @@ if(CPPREST_HTTP_CLIENT_IMPL STREQUAL "asio")
   cpprest_find_boost()
   target_include_directories(cpprest SYSTEM PRIVATE ${Boost_INCLUDE_DIR})
   target_link_libraries(cpprest PRIVATE ${Boost_LIBRARIES})
+  target_compile_definitions(cpprest PUBLIC -DCPPREST_FORCE_HTTP_CLIENT_ASIO)
 
   target_sources(cpprest PRIVATE http/client/http_client_asio.cpp)
 elseif(CPPREST_HTTP_CLIENT_IMPL STREQUAL "winhttp")
@@ -160,6 +164,7 @@ endif()
 # http listener component
 if(CPPREST_HTTP_LISTENER_IMPL STREQUAL "asio")
   target_sources(cpprest PRIVATE http/listener/http_server_asio.cpp)
+  target_compile_definitions(cpprest PUBLIC -DCPPREST_FORCE_HTTP_LISTENER_ASIO)
 elseif(CPPREST_HTTP_LISTENER_IMPL STREQUAL "httpsys")
   target_sources(cpprest PRIVATE http/listener/http_server_httpsys.cpp)
 elseif(CPPREST_HTTP_LISTENER_IMPL STREQUAL "none")

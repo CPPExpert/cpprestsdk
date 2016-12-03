@@ -30,7 +30,8 @@ namespace details
     utility::string_t get_default_reason_phrase(status_code code);
 
     // simple helper functions to trim whitespace.
-    _ASYNCRTIMP void __cdecl trim_whitespace(utility::string_t &str);
+    _ASYNCRTIMP void __cdecl trim_whitespace(std::string &str);
+    _ASYNCRTIMP void __cdecl trim_whitespace(utf16string &str);
 
     bool validate_method(const utility::string_t& method);
 

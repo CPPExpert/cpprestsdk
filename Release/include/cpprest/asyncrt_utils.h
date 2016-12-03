@@ -114,14 +114,22 @@ namespace conversions
     /// </summary>
     /// <param name="s">A single byte character UTF-8 string.</param>
     /// <returns>A platform dependent string type.</returns>
+#ifdef _UTF16_STRINGS
     _ASYNCRTIMP utility::string_t __cdecl to_string_t(const std::string &s);
+#else
+    const utility::string_t& to_string_t(const std::string &s) { return s; }
+#endif
 
     /// <summary>
     /// Converts to a platform dependent Unicode string type.
     /// </summary>
     /// <param name="s">A two byte character UTF-16 string.</param>
     /// <returns>A platform dependent string type.</returns>
+#ifdef _UTF16_STRINGS
+    const utility::string_t& to_string_t(const utf16string &s) { return s; }
+#else
     _ASYNCRTIMP utility::string_t __cdecl to_string_t(const utf16string &s);
+#endif
 
     /// <summary>
     /// Converts to a UTF-16 from string.
@@ -142,7 +150,14 @@ namespace conversions
     /// </summary>
     /// <param name="value">A single byte character UTF-8 string.</param>
     /// <returns>A single byte character UTF-8 string.</returns>
-    _ASYNCRTIMP std::string __cdecl to_utf8string(std::string value);
+    inline std::string&& to_utf8string(std::string&& value) { return std::move(value); }
+
+    /// <summary>
+    /// Converts to a UTF-8 string.
+    /// </summary>
+    /// <param name="value">A single byte character UTF-8 string.</param>
+    /// <returns>A single byte character UTF-8 string.</returns>
+    inline const std::string& to_utf8string(const std::string& value) { return value; }
 
     /// <summary>
     /// Converts to a UTF-8 string.
@@ -167,10 +182,10 @@ namespace conversions
     _ASYNCRTIMP std::vector<unsigned char> __cdecl from_base64(const utility::string_t& str);
 
     template <typename Source>
-    utility::string_t print_string(const Source &val, const std::locale &loc)
+    utility::string_t print_string(const Source &val)
     {
         utility::ostringstream_t oss;
-        oss.imbue(loc);
+        oss.imbue(std::locale::classic());
         oss << val;
         if (oss.bad())
         {
@@ -179,15 +194,22 @@ namespace conversions
         return oss.str();
     }
 
-    template <typename Source>
-    utility::string_t print_string(const Source &val)
-    {
-        return print_string(val, std::locale());
-    }
-
-    inline utility::string_t print_string(const utility::string_t &val)
+    inline const utility::string_t& print_string(const utility::string_t &val)
     {
         return val;
+    }
+
+    namespace details
+    {
+        template<class T>
+        inline utility::string_t to_string_t(T&& t)
+        {
+#ifdef _UTF16_STRINGS
+            return std::to_wstring(std::forward<T>(t));
+#else
+            return std::to_string(std::forward<T>(t));
+#endif
+        }
     }
 
     template <typename Target>

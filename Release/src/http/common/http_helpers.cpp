@@ -79,22 +79,26 @@ utility::string_t get_default_reason_phrase(status_code code)
     return phrase;
 }
 
-static void ltrim_whitespace(utility::string_t &str)
+void trim_whitespace(std::string &str)
 {
     size_t index;
+    // trim left whitespace
     for (index = 0; index < str.size() && isspace(str[index]); ++index);
     str.erase(0, index);
-}
-static void rtrim_whitespace(utility::string_t &str)
-{
-    size_t index;
+    // trim right whitespace
     for (index = str.size(); index > 0 && isspace(str[index - 1]); --index);
     str.erase(index);
 }
-void trim_whitespace(utility::string_t &str)
+
+void trim_whitespace(utf16string &str)
 {
-    ltrim_whitespace(str);
-    rtrim_whitespace(str);
+    size_t index;
+    // trim left whitespace
+    for (index = 0; index < str.size() && isspace(str[index]); ++index);
+    str.erase(0, index);
+    // trim right whitespace
+    for (index = str.size(); index > 0 && isspace(str[index - 1]); --index);
+    str.erase(index);
 }
 
 size_t chunked_encoding::add_chunked_delimiters(_Out_writes_(buffer_size) uint8_t *data, _In_ size_t buffer_size, size_t bytes_read)

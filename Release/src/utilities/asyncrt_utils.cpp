@@ -456,31 +456,23 @@ utility::string_t __cdecl conversions::to_string_t(std::string &&s)
 #endif
 }
 
+#ifndef _UTF16_STRINGS
 utility::string_t __cdecl conversions::to_string_t(const utf16string &s)
 {
-#ifdef _UTF16_STRINGS
-    return s;
-#else
     return utf16_to_utf8(s);
-#endif
 }
+#endif
 
+#ifdef _UTF16_STRINGS
 utility::string_t __cdecl conversions::to_string_t(const std::string &s)
 {
-#ifdef _UTF16_STRINGS
     return utf8_to_utf16(s);
-#else
-    return s;
-#endif
 }
-
-std::string __cdecl conversions::to_utf8string(std::string value) { return value; }
+#endif
 
 std::string __cdecl conversions::to_utf8string(const utf16string &value) { return utf16_to_utf8(value); }
 
 utf16string __cdecl conversions::to_utf16string(const std::string &value) { return utf8_to_utf16(value); }
-
-utf16string __cdecl conversions::to_utf16string(utf16string value) { return value; }
 
 #ifndef WIN32
 datetime datetime::timeval_to_datetime(const timeval &time)
