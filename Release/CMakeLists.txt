@@ -8,6 +8,7 @@ set(WERROR ON CACHE BOOL "Treat Warnings as Errors.")
 set(CPPREST_EXCLUDE_WEBSOCKETS OFF CACHE BOOL "Exclude websockets functionality.")
 set(CPPREST_EXCLUDE_COMPRESSION OFF CACHE BOOL "Exclude compression functionality.")
 set(CPPREST_EXPORT_DIR lib/cpprest CACHE STRING "Directory to install CMake config files.")
+set(CPPREST_EXPORT_NAME cpprest-config CACHE STRING "Name for CMake config file.")
 set(CPPREST_INSTALL_HEADERS ON CACHE BOOL "Install header files.")
 
 if(IOS OR ANDROID)
