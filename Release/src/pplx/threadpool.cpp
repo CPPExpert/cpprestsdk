@@ -79,7 +79,7 @@ private:
 #if (defined(ANDROID) || defined(__ANDROID__))
     static void detach_from_java(void*)
     {
-        JVM.load()->DetachCurrentThread();
+        crossplat::JVM.load()->DetachCurrentThread();
     }
 #endif
 
@@ -157,7 +157,7 @@ JNIEnv* get_jvm_env()
 threadpool& threadpool::shared_instance()
 {
     abort_if_no_jvm();
-    static threadpool s_shared(40);
+    static threadpool_impl s_shared(40);
     return s_shared;
 }
 
