@@ -4,7 +4,7 @@ function(cpprest_find_openssl)
   endif()
 
   if(IOS)
-    set(IOS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Build_iOS")
+    set(IOS_SOURCE_DIR "${PROJECT_SOURCE_DIR}/../Build_iOS")
     set(OPENSSL_FOUND 1 CACHE INTERNAL "")
     set(OPENSSL_INCLUDE_DIR "$<BUILD_INTERFACE:${IOS_SOURCE_DIR}/openssl/include>" CACHE INTERNAL "")
     set(OPENSSL_LIBRARIES
@@ -12,6 +12,8 @@ function(cpprest_find_openssl)
       "${IOS_SOURCE_DIR}/openssl/lib/libssl.a"
       CACHE INTERNAL ""
       )
+    set(_SSL_LEAK_SUPPRESS_AVAILABLE ON CACHE INTERNAL "")
+    return()
   elseif(ANDROID)
     set(OPENSSL_FOUND 1 CACHE INTERNAL "")
     if(ARM)
@@ -39,11 +41,13 @@ function(cpprest_find_openssl)
     # This should prevent linking against the system provided 0.9.8y
     set(_OPENSSL_VERSION "")
     find_package(OpenSSL 1.0.0 REQUIRED)
-    set(OPENSSL_LIBRARIES ${OPENSSL_LIBRARIES} CACHE INTERNAL "")
   else()
     find_package(OpenSSL 1.0.0 REQUIRED)
-    set(OPENSSL_LIBRARIES ${OPENSSL_LIBRARIES} CACHE INTERNAL "")
   endif()
+
+  set(OPENSSL_FOUND 1 CACHE INTERNAL "")
+  set(OPENSSL_INCLUDE_DIR ${OPENSSL_INCLUDE_DIR} CACHE INTERNAL "")
+  set(OPENSSL_LIBRARIES ${OPENSSL_LIBRARIES} CACHE INTERNAL "")
 
   INCLUDE(CheckCXXSourceCompiles)
   set(CMAKE_REQUIRED_INCLUDES "${OPENSSL_INCLUDE_DIR}")

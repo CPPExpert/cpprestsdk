@@ -4,7 +4,7 @@ function(cpprest_find_boost)
   endif()
 
   if(IOS)
-    set(IOS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Build_iOS")
+    set(IOS_SOURCE_DIR "${PROJECT_SOURCE_DIR}/../Build_iOS")
     set(Boost_FOUND 1 CACHE INTERNAL "")
     set(Boost_FRAMEWORK "-F ${IOS_SOURCE_DIR} -framework boost" CACHE INTERNAL "")
     set(Boost_INCLUDE_DIR "$<BUILD_INTERFACE:${IOS_SOURCE_DIR}/boost.framework/Headers>" CACHE INTERNAL "")
