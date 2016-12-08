@@ -32,7 +32,7 @@ using namespace utility::conversions;
 
 namespace tests { namespace functional { namespace http { namespace utilities {
 
-#if defined(_WIN32) && 0
+#if defined(_WIN32)
 // Helper function to parse verb from Windows HTTP Server API.
 static utility::string_t parse_verb(const HTTP_REQUEST *p_http_request)
 {
