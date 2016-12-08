@@ -12,8 +12,8 @@ if (NOT CPPREST_EXCLUDE_WEBSOCKETS)
     target_link_libraries(websockettest_utilities PRIVATE
       unittestpp
       common_utilities
+      cpprest
       ${BOOST_LIBRARIES}
-      ${Casablanca_LIBRARIES}
     )
   endif()
 

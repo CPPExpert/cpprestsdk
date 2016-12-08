@@ -164,7 +164,7 @@ set(Casablanca_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(Casablanca_SYSTEM_INCLUDE_DIRS)
 
 set(Casablanca_LIBRARY cpprest)
-set(Casablanca_LIBRARIES cpprest ${Boost_LIBRARIES} ${ZLIB_LIBRARIES})
+set(Casablanca_LIBRARIES cpprest)
 get_directory_property(PARENT_DIR PARENT_DIRECTORY)
 if(NOT PARENT_DIR STREQUAL "")
   set(Casablanca_LIBRARIES ${Casablanca_LIBRARIES} PARENT_SCOPE)
@@ -183,7 +183,7 @@ function(add_casablanca_test NAME SOURCES_VAR)
       httptest_utilities
       common_utilities
       unittestpp
-      ${Casablanca_LIBRARIES}
+      cpprest
       ${ANDROID_STL_FLAGS}
       )
     if (BUILD_SHARED_LIBS)
