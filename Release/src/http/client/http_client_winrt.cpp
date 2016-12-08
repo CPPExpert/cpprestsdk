@@ -15,6 +15,7 @@
 #include "stdafx.h"
 
 #include "http_client_impl.h"
+#include "cpprest/http_headers.h"
 
 #include <Strsafe.h>
 // Important for WP8
@@ -92,7 +93,7 @@ public:
                     (*progress)(message_direction::upload, 0);
                 }
 
-                parse_headers_string(hdrStr, response.headers());
+                web::http::details::parse_headers_string(hdrStr, response.headers());
                 m_request->complete_headers();
             }
             catch (...)
