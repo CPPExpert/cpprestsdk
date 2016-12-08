@@ -4,6 +4,7 @@ set(SOURCES
   strings.cpp
   macro_test.cpp
   nonce_generator_tests.cpp
+  stdafx.cpp
 )
 
 add_casablanca_test(${LIB}utils_test SOURCES)

@@ -307,7 +307,7 @@ TEST(print_string_locale, "Ignore:Android", "Locale unsupported on Android")
     utility::ostringstream_t oss;
     oss << 1000;
     VERIFY_ARE_EQUAL(oss.str(), utility::conversions::print_string(1000));
-    VERIFY_ARE_EQUAL(_XPLATSTR("1000"), utility::conversions::print_string(1000, std::locale::classic()));
+    VERIFY_ARE_EQUAL(_XPLATSTR("1000"), utility::conversions::print_string(1000));
 }
 
 TEST(scan_string_locale, "Ignore:Android", "Locale unsupported on Android")

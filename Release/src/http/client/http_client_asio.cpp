@@ -24,6 +24,7 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/bind.hpp>
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
@@ -32,6 +33,7 @@
 #error "Cpp rest SDK requires c++11 smart pointer support from boost"
 #endif
 
+#include "pplx/threadpool.h"
 #include "http_client_impl.h"
 #include "cpprest/base_uri.h"
 #include "cpprest/details/x509_cert_utilities.h"
@@ -61,6 +63,14 @@ enum class httpclient_errorcode_context
     readbody,
     close
 };
+
+static std::string generate_base64_userpass(const ::web::credentials& creds)
+{
+    auto userpass = creds.username() + U(":") + *creds._internal_decrypt();
+    auto&& u8_userpass = utility::conversions::to_utf8string(userpass);
+    std::vector<unsigned char> credentials_buffer(u8_userpass.begin(), u8_userpass.end());
+    return utility::conversions::to_utf8string(utility::conversions::to_base64(credentials_buffer));
+}
 
 class asio_connection_pool;
 
@@ -129,7 +139,7 @@ public:
     template <typename HandshakeHandler, typename CertificateHandler>
     void async_handshake(boost::asio::ssl::stream_base::handshake_type type,
                          const http_client_config &config,
-                         const utility::string_t &host_name,
+                         const std::string& host_name,
                          const HandshakeHandler &handshake_handler,
                          const CertificateHandler &cert_handler)
     {
@@ -337,7 +347,7 @@ public:
         : _http_client_communicator(std::move(address), std::move(client_config))
         , m_resolver(crossplat::threadpool::shared_instance().service())
         , m_pool(std::make_shared<asio_connection_pool>())
-        , m_start_with_ssl(base_uri().scheme() == "https" && !this->client_config().proxy().is_specified())
+        , m_start_with_ssl(base_uri().scheme() == U("https") && !this->client_config().proxy().is_specified())
     {}
 
     void send_request(const std::shared_ptr<request_context> &request_ctx) override;
@@ -421,7 +431,7 @@ public:
             int proxy_port = proxy_uri.port() == -1 ? 8080 : proxy_uri.port();
 
             const auto &base_uri = m_context->m_http_client->base_uri();
-            const auto &host = base_uri.host();
+            const auto &host = utility::conversions::to_utf8string(base_uri.host());
 
             std::ostream request_stream(&m_request);
             request_stream.imbue(std::locale::classic());
@@ -439,7 +449,7 @@ public:
 
             m_context->m_timer.start();
 
-            tcp::resolver::query query(proxy_host, utility::conversions::print_string(proxy_port, std::locale::classic()));
+            tcp::resolver::query query(utility::conversions::to_utf8string(proxy_host), std::to_string(proxy_port));
 
             auto client = std::static_pointer_cast<asio_client>(m_context->m_http_client);
             client->m_resolver.async_resolve(query, boost::bind(&ssl_proxy_tunnel::handle_resolve, shared_from_this(), boost::asio::placeholders::error, boost::asio::placeholders::iterator));
@@ -523,9 +533,7 @@ public:
                 
                 if (status_code != 200)
                 {
-                    utility::stringstream_t err_ss;
-                    err_ss << U("Expected a 200 response from proxy, received: ") << status_code;
-                    m_context->report_error(err_ss.str(), ec, httpclient_errorcode_context::readheader);
+                    m_context->report_error("Expected a 200 response from proxy, received: " + std::to_string(status_code), ec, httpclient_errorcode_context::readheader);
                     return;
                 }
 
@@ -587,7 +595,7 @@ public:
         }
         
         http_proxy_type proxy_type = http_proxy_type::none;
-        utility::string_t proxy_host;
+        std::string proxy_host;
         int proxy_port = -1;
         
         // There is no support for auto-detection of proxies on non-windows platforms, it must be specified explicitly from the client code.
@@ -597,7 +605,7 @@ public:
             auto proxy = m_http_client->client_config().proxy();
             auto proxy_uri = proxy.address();
             proxy_port = proxy_uri.port() == -1 ? 8080 : proxy_uri.port();
-            proxy_host = proxy_uri.host();
+            proxy_host = utility::conversions::to_utf8string(proxy_uri.host());
         }
         
         auto start_http_request_flow = [proxy_type, proxy_host, proxy_port](std::shared_ptr<asio_context> ctx)
@@ -614,9 +622,9 @@ public:
             // For a normal http proxy, we need to specify the full request uri, otherwise just specify the resource
             auto encoded_resource = proxy_type == http_proxy_type::http ? full_uri.to_string() : full_uri.resource().to_string();
                 
-            if (encoded_resource == "")
+            if (encoded_resource.empty())
             {
-                encoded_resource = "/";
+                encoded_resource = U("/");
             }
                 
             const auto &method = ctx->m_request.method();
@@ -632,9 +640,9 @@ public:
                 
             std::ostream request_stream(&ctx->m_body_buf);
             request_stream.imbue(std::locale::classic());
-            const auto &host = base_uri.host();
+            const auto &host = utility::conversions::to_utf8string(base_uri.host());
                 
-            request_stream << method << " " << encoded_resource << " " << "HTTP/1.1" << CRLF;
+            request_stream << utility::conversions::to_utf8string(method) << " " << utility::conversions::to_utf8string(encoded_resource) << " " << "HTTP/1.1" << CRLF;
                 
             int port = base_uri.port();
                 
@@ -650,7 +658,7 @@ public:
             }
                 
             // Extra request headers are constructed here.
-            utility::string_t extra_headers;
+            std::string extra_headers;
                 
             // Add header for basic proxy authentication
             if (proxy_type == http_proxy_type::http && ctx->m_http_client->client_config().proxy().credentials().is_set())
@@ -666,12 +674,7 @@ public:
             // Add the header needed to request a compressed response if supported on this platform and it has been specified in the config
             if (web::http::details::compression::stream_decompressor::is_supported() && ctx->m_http_client->client_config().request_compressed_response())
             {
-                utility::string_t accept_encoding_header;
-                accept_encoding_header.append(header_names::accept_encoding);
-                accept_encoding_header.append(": deflate, gzip");
-                accept_encoding_header.append(CRLF);
-
-                extra_headers.append(accept_encoding_header);
+                extra_headers.append("Accept-Encoding: deflate, gzip\r\n");
             }
 
             // Check user specified transfer-encoding.
@@ -686,20 +689,23 @@ public:
                 if (ctx->m_request.body())
                 {
                     ctx->m_needChunked = true;
-                    extra_headers.append(header_names::transfer_encoding);
-                    extra_headers.append(":chunked" + CRLF);
+                    extra_headers.append("Transfer-Encoding:chunked\r\n");
+                }
+                else
+                {
+                    // Howver, if there is no body, then just send 0 length.
+                    extra_headers.append("Content-Length: 0\r\n");
                 }
             }
                 
             if (proxy_type == http_proxy_type::http)
             {
-                extra_headers.append(header_names::cache_control);
-                extra_headers.append(": no-store, no-cache" + CRLF);
-                extra_headers.append(header_names::pragma);
-                extra_headers.append(": no-cache" + CRLF);
+                extra_headers.append(
+                    "Cache-Control: no-store, no-cache\r\n"
+                    "Pragma: no-cache\r\n");
             }
                 
-            request_stream << ::web::http::details::flatten_http_headers(ctx->m_request.headers());
+            request_stream << utility::conversions::to_utf8string(::web::http::details::flatten_http_headers(ctx->m_request.headers()));
             request_stream << extra_headers;
             // Enforce HTTP connection keep alive (even for the old HTTP/1.0 protocol).
             request_stream << "Connection: Keep-Alive" << CRLF << CRLF;
@@ -724,7 +730,7 @@ public:
                 auto tcp_host = proxy_type == http_proxy_type::http ? proxy_host : host;
                 auto tcp_port = proxy_type == http_proxy_type::http ? proxy_port : port;
                     
-                tcp::resolver::query query(tcp_host, utility::conversions::print_string(tcp_port, std::locale::classic()));
+                tcp::resolver::query query(tcp_host, std::to_string(tcp_port));
                 auto client = std::static_pointer_cast<asio_client>(ctx->m_http_client);
                 client->m_resolver.async_resolve(query, boost::bind(&asio_context::handle_resolve, ctx, boost::asio::placeholders::error, boost::asio::placeholders::iterator));
             }
@@ -772,43 +778,25 @@ public:
     }
 
 private:
-    utility::string_t generate_basic_auth_header()
+    std::string generate_basic_auth_header()
     {
-        utility::string_t header;
-
-        header.append(header_names::authorization);
-        header.append(": Basic ");
-
-        auto credential_str = web::details::plaintext_string(new ::utility::string_t(m_http_client->client_config().credentials().username()));
-        credential_str->append(":");
-        credential_str->append(*m_http_client->client_config().credentials().decrypt());
-
-        std::vector<unsigned char> credentials_buffer(credential_str->begin(), credential_str->end());
-
-        header.append(utility::conversions::to_base64(credentials_buffer));
+        std::string header;
+        header.append("Authorization: Basic ");
+        header.append(generate_base64_userpass(m_http_client->client_config().credentials()));
         header.append(CRLF);
         return header;
     }
 
-    utility::string_t generate_basic_proxy_auth_header()
+    std::string generate_basic_proxy_auth_header()
     {
-        utility::string_t header;
-        
-        header.append(header_names::proxy_authorization);
-        header.append(": Basic ");
-        
-        auto credential_str = web::details::plaintext_string(new ::utility::string_t(m_http_client->client_config().proxy().credentials().username()));
-        credential_str->append(":");
-        credential_str->append(*m_http_client->client_config().proxy().credentials().decrypt());
-        
-        std::vector<unsigned char> credentials_buffer(credential_str->begin(), credential_str->end());
-        
-        header.append(utility::conversions::to_base64(credentials_buffer));
+        std::string header;
+        header.append("Proxy-Authorization: Basic ");
+        header.append(generate_base64_userpass(m_http_client->client_config().credentials()));
         header.append(CRLF);
         return header;
     }
 
-    void report_error(const utility::string_t &message, const boost::system::error_code &ec, httpclient_errorcode_context context = httpclient_errorcode_context::none)
+    void report_error(const std::string &message, const boost::system::error_code &ec, httpclient_errorcode_context context = httpclient_errorcode_context::none)
     {
         // By default, errorcodeValue don't need to converted
         long errorcodeValue = ec.value();
@@ -856,7 +844,7 @@ private:
         {
             write_request();
         }
-        else if (ec.value() == boost::system::errc::operation_canceled)
+        else if (ec.value() == boost::system::errc::operation_canceled || ec.value() == boost::asio::error::operation_aborted)
         {
             request_context::report_error(ec.value(), "Request canceled by user.");
         }
@@ -903,7 +891,7 @@ private:
             const auto weakCtx = std::weak_ptr<asio_context>(shared_from_this());
             m_connection->async_handshake(boost::asio::ssl::stream_base::client,
                                           m_http_client->client_config(),
-                                          m_http_client->base_uri().host(),
+                                          utility::conversions::to_utf8string(m_http_client->base_uri().host()),
                                           boost::bind(&asio_context::handle_handshake, shared_from_this(), boost::asio::placeholders::error),
 
                                           // Use a weak_ptr since the verify_callback is stored until the connection is destroyed.
@@ -944,7 +932,7 @@ private:
         // certificate chain, the rest are optional intermediate certificates, followed
         // finally by the root CA self signed certificate.
 
-        const auto &host = m_http_client->base_uri().host();
+        const auto &host = utility::conversions::to_utf8string(m_http_client->base_uri().host());
 #if defined(__APPLE__) || (defined(ANDROID) || defined(__ANDROID__))
         // On OS X, iOS, and Android, OpenSSL doesn't have access to where the OS
         // stores keychains. If OpenSSL fails we will doing verification at the
@@ -1137,7 +1125,7 @@ private:
             m_response.set_status_code(status_code);
 
             ::web::http::details::trim_whitespace(status_message);
-            m_response.set_reason_phrase(std::move(status_message));
+            m_response.set_reason_phrase(utility::conversions::to_string_t(std::move(status_message)));
 
             if (!response_stream || http_version.substr(0, 5) != "HTTP/")
             {
@@ -1207,7 +1195,7 @@ private:
                     m_connection->set_keep_alive(!boost::iequals(value, U("close")));
                 }
 
-                m_response.headers().add(std::move(name), std::move(value));
+                m_response.headers().add(utility::conversions::to_string_t(std::move(name)), utility::conversions::to_string_t(std::move(value)));
             }
         }
         complete_headers();
@@ -1226,9 +1214,7 @@ private:
             }
             else
             {
-                utility::string_t error = U("Unsupported compression algorithm in the Content Encoding header: ");
-                error += content_encoding;
-                report_exception(std::runtime_error(error));
+                report_exception(std::runtime_error("Unsupported compression algorithm in the Content Encoding header: " + utility::conversions::to_utf8string(content_encoding)));
             }
         }
 

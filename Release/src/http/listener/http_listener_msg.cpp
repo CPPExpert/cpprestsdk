@@ -67,11 +67,21 @@ pplx::task<void> details::_http_request::_reply_if_not_already(status_code statu
 
 pplx::task<void> details::_http_request::reply(const http_response &response)
 {
+#if 0
     if(pplx::details::atomic_increment(m_initiated_response) != 1l)
     {
         throw http_exception(U("Error: trying to send multiple responses to an HTTP request"));
     }
     return _reply_impl(response);
+#else
+    const long expected = 0;
+    const long desired = 1;
+    if (pplx::details::atomic_compare_exchange(m_initiated_response, desired, expected) == expected)
+    {
+        return _reply_impl(response);
+    }
+    return pplx::task_from_result();
+#endif
 }
 
 }} // namespace web::http

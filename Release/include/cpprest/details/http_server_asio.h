@@ -19,6 +19,7 @@
 #pragma clang diagnostic pop
 #endif
 #include <boost/bind.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 namespace web
 {
@@ -132,7 +133,7 @@ private:
     std::map<std::string, web::http::experimental::listener::details::http_listener_impl* > m_listeners;
     pplx::extensibility::reader_writer_lock_t m_listeners_lock;
 
-    pplx::extensibility::recursive_lock_t m_connections_lock;
+    std::mutex m_connections_lock;
     pplx::extensibility::event_t m_all_connections_complete;
     std::set<connection*> m_connections;
 
