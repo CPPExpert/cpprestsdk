@@ -10,11 +10,10 @@ function(cpprest_find_zlib)
 
     if(ZLIB_LIBRARIES AND ZLIB_INCLUDE_DIRS)
       set(ZLIB_FOUND 1 CACHE INTERNAL "")
-      return()
     endif()
+  else()
+    find_package(ZLIB REQUIRED)
   endif()
-
-  find_package(ZLIB REQUIRED)
 
   set(ZLIB_LIBRARIES ${ZLIB_LIBRARIES} CACHE INTERNAL "")
 endfunction()
