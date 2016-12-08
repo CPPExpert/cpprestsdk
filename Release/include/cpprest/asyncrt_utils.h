@@ -236,7 +236,7 @@ namespace conversions
         inline utility::string_t to_string_t(T&& t)
         {
 #ifdef _UTF16_STRINGS
-            using std::to_wstring
+            using std::to_wstring;
             return to_wstring(std::forward<T>(t));
 #else
 #if !defined(__ANDROID__)
