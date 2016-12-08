@@ -6,7 +6,7 @@ function(cpprest_find_openssl)
   if(IOS)
     set(IOS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Build_iOS")
     set(OPENSSL_FOUND 1 CACHE INTERNAL "")
-    set(OPENSSL_INCLUDE_DIR $<BUILD_INTERFACE:"${IOS_SOURCE_DIR}/openssl/include"> CACHE INTERNAL "")
+    set(OPENSSL_INCLUDE_DIR "$<BUILD_INTERFACE:${IOS_SOURCE_DIR}/openssl/include>" CACHE INTERNAL "")
     set(OPENSSL_LIBRARIES
       "${IOS_SOURCE_DIR}/openssl/lib/libcrypto.a"
       "${IOS_SOURCE_DIR}/openssl/lib/libssl.a"
@@ -15,14 +15,14 @@ function(cpprest_find_openssl)
   elseif(ANDROID)
     set(OPENSSL_FOUND 1 CACHE INTERNAL "")
     if(ARM)
-      set(OPENSSL_INCLUDE_DIR $<BUILD_INTERFACE:"${CMAKE_BINARY_DIR}/../openssl/armeabi-v7a/include"> CACHE INTERNAL "")
+      set(OPENSSL_INCLUDE_DIR "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/../openssl/armeabi-v7a/include>" CACHE INTERNAL "")
       set(OPENSSL_LIBRARIES
         "${CMAKE_BINARY_DIR}/../openssl/armeabi-v7a/lib/libssl.a"
         "${CMAKE_BINARY_DIR}/../openssl/armeabi-v7a/lib/libcrypto.a"
         CACHE INTERNAL ""
         )
     else()
-      set(OPENSSL_INCLUDE_DIR $<BUILD_INTERFACE:"${CMAKE_BINARY_DIR}/../openssl/x86/include"> CACHE INTERNAL "")
+      set(OPENSSL_INCLUDE_DIR "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/../openssl/x86/include>" CACHE INTERNAL "")
       set(OPENSSL_LIBRARIES
         "${CMAKE_BINARY_DIR}/../openssl/x86/lib/libssl.a"
         "${CMAKE_BINARY_DIR}/../openssl/x86/lib/libcrypto.a"
