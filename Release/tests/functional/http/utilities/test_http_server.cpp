@@ -648,7 +648,7 @@ unsigned long test_request::reply(
     return reply_impl(status_code, reason_phrase, headers, (void *)&data[0], data.size() * sizeof(utf16char));
 }
 
-#if defined(_WIN32) && 0
+#if defined(_WIN32)
 unsigned long test_request::reply_impl(
         const unsigned short status_code, 
         const utility::string_t &reason_phrase, 
